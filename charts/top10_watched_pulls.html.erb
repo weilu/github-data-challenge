@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Top 20 Watched Repositories</title>
+    <link type="text/css" rel="stylesheet" href="./detail.css">
+    <link type="text/css" rel="stylesheet" href="./graph.css">
+    <script src="../lib/d3.v2.js"></script>
+    <script src="../lib/rickshaw.min.js"></script>
+    <style>
+      #chart {
+        position: relative;
+        left: 40px;
+        display: block;
+      }
+      #y_axis {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 40px;
+      }
+      #x_axis {
+        position: relative;
+        left: 80px;
+        height: 40px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="y_axis"></div>
+    <div id="chart"></div>
+    <div id="x_axis"></div>
+
+    <script>
+      var closed_pr = <%= JSON.generate(closed) %>;
+      var open_pr = <%= JSON.generate(open) %>;
+      var map = <%= JSON.generate(map) %>;
+      var width = 800
+
+      var graph = new Rickshaw.Graph( {
+        element: document.querySelector("#chart"),
+        width: width,
+        height: 400,
+        renderer: 'bar',
+        series: [
+          {
+          data: closed_pr,
+          color: '#4682b4',
+          name: 'closed'
+        }, {
+          data: open_pr,
+          color: '#9cc1e0',
+          name: 'open'
+        } ]
+      } );
+
+      var hoverDetail = new Rickshaw.Graph.HoverDetail( {
+        graph: graph,
+        xFormatter: function(x) { return null },
+        yFormatter: function(y) { return y/100 + "%" }
+      } );
+
+      var format = function(n) {
+        return map[n];
+      }
+
+      var x_ticks = new Rickshaw.Graph.Axis.X( {
+        graph: graph,
+        orientation: 'bottom',
+        element: document.getElementById('x_axis'),
+        pixelsPerTick: width/10,
+        tickFormat: format
+      } );
+
+      graph.render();
+    </script>
+  </body>
+</html>

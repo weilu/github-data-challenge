@@ -1,5 +1,6 @@
 require 'uri'
 require 'octokit'
+require 'csv'
 
 def pull_request_ids(repo, state)
   page = 0
@@ -18,10 +19,15 @@ end
 
 @client = Octokit::Client.new(:login => "weilu", :password => ENV['_GITHUB'])
 
-File.open 'top10_watched.csv' do |f|
-  f.read.split("\n").each do |url|
-    repo_path = URI.parse(url).path.slice(1..-1)
-    pulls = pull_request_ids(repo_path, 'open').count
-    puts "#{repo_path}: #{pulls}"
+CSV.open('data/top10_watched_pulls.csv', 'wb') do |csv|
+  csv << ['repo', 'closed', 'open']
+  File.open 'top10_watched.csv' do |f|
+    f.read.split("\n").each do |url|
+      repo_path = URI.parse(url).path.slice(1..-1)
+      closed = pull_request_ids(repo_path, 'closed').count
+      open = pull_request_ids(repo_path, 'open').count
+      puts "#{repo_path} closed: #{closed}, open: #{open}"
+      csv << [repo_path, closed, open]
+    end
   end
 end
