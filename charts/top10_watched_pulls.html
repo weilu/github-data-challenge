@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Top 20 Watched Repositories</title>
+    <link type="text/css" rel="stylesheet" href="./detail.css">
+    <link type="text/css" rel="stylesheet" href="./graph.css">
+    <script src="../lib/d3.v2.js"></script>
+    <script src="../lib/rickshaw.min.js"></script>
+    <style>
+      #chart {
+        position: relative;
+        left: 40px;
+        display: block;
+      }
+      #y_axis {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 40px;
+      }
+      #x_axis {
+        position: relative;
+        left: 80px;
+        height: 40px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="y_axis"></div>
+    <div id="chart"></div>
+    <div id="x_axis"></div>
+
+    <script>
+      var closed_pr = [{"x":0,"y":9673},{"x":1,"y":9452},{"x":2,"y":9943},{"x":3,"y":9958},{"x":4,"y":9665},{"x":5,"y":7520},{"x":6,"y":9240},{"x":7,"y":9981},{"x":8,"y":8405},{"x":9,"y":9866}];
+      var open_pr = [{"x":0,"y":326},{"x":1,"y":547},{"x":2,"y":56},{"x":3,"y":41},{"x":4,"y":334},{"x":5,"y":2479},{"x":6,"y":759},{"x":7,"y":18},{"x":8,"y":1594},{"x":9,"y":133}];
+      var map = {"0":"twitter/bootstrap","1":"joyent/node","2":"jquery/jquery","3":"h5bp/html5-boilerplate","4":"rails/rails","5":"bartaz/impress.js","6":"mbostock/d3","7":"documentcloud/backbone","8":"FortAwesome/Font-Awesome","9":"mxcl/homebrew"};
+      var width = 800
+
+      var graph = new Rickshaw.Graph( {
+        element: document.querySelector("#chart"),
+        width: width,
+        height: 400,
+        renderer: 'bar',
+        series: [
+          {
+          data: closed_pr,
+          color: '#4682b4',
+          name: 'closed'
+        }, {
+          data: open_pr,
+          color: '#9cc1e0',
+          name: 'open'
+        } ]
+      } );
+
+      var hoverDetail = new Rickshaw.Graph.HoverDetail( {
+        graph: graph,
+        xFormatter: function(x) { return null },
+        yFormatter: function(y) { return y/100 + "%" }
+      } );
+
+      var format = function(n) {
+        return map[n];
+      }
+
+      var x_ticks = new Rickshaw.Graph.Axis.X( {
+        graph: graph,
+        orientation: 'bottom',
+        element: document.getElementById('x_axis'),
+        pixelsPerTick: width/10,
+        tickFormat: format
+      } );
+
+      graph.render();
+    </script>
+  </body>
+</html>

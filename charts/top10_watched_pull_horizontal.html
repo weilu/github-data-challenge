@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Top 10 Watched Repositories</title>
+<style>
+body {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.bar {
+  fill: steelblue;
+}
+
+</style>
+<body>
+<script src="../lib/d3.v3.min.js"></script>
+<script>
+
+var margin = {top: 30, right: 10, bottom: 10, left: 150},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var x = d3.scale.linear()
+    .range([0, width])
+
+var y = d3.scale.ordinal()
+    .rangeRoundBands([0, height], .1);
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("top");
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left")
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var color = d3.scale.ordinal()
+    .range(["#98abc5", "#8a89a6"]);
+
+d3.csv("../data/top10_watched_pulls.csv", function(error, data) {
+
+  color.domain(d3.keys(data[0]).filter(function(key) { return key !== "repo"; }));
+
+  data.forEach(function(d) {
+    var x0 = 0;
+    d.pulls = color.domain().map(function(name) {
+      return {
+        name: name,
+        x0: x0,
+        x1: x0 += +d[name]
+      };
+    });
+    d.total = d.pulls[d.pulls.length - 1].x1;
+  });
+
+  x.domain([0, d3.max(data, function(d) { return d.total })]);
+  y.domain(data.map(function(d) { return d.repo; }));
+
+  var repo = svg.selectAll(".repo")
+      .data(data)
+    .enter().append("g")
+      .attr("class", "g")
+      .attr("transform", function(d) { return "translate(0," + y(d.repo) + ")"; });
+
+  repo.selectAll(".bar")
+      .data(function(d) { return d.pulls; })
+    .enter().append("rect")
+      .attr("x", function(d) { return x(d.x0); })
+      .attr("width", function(d) { return x(d.x1) - x(d.x0) })
+      .attr("height", y.rangeBand())
+      .style("fill", function(d) { return color(d.name); });
+
+  svg.append("g")
+      .attr("class", "x axis")
+      .call(xAxis);
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis);
+
+});
+
+</script>
