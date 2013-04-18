@@ -22,7 +22,7 @@ body {
 <script src="../lib/d3.v3.min.js"></script>
 <script>
 
-var margin = {top: 30, right: 10, bottom: 10, left: 150},
+var margin = {top: 30, right: 50, bottom: 10, left: 150},
     width = 960 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom;
 
@@ -49,6 +49,8 @@ var svg = d3.select("body").append("svg")
 var color = d3.scale.ordinal()
     .range(["#98abc5", "#8a89a6"]);
 
+var MAX = 100;
+
 d3.csv("../data/top10_watched_pulls.csv", function(error, data) {
 
   color.domain(d3.keys(data[0]).filter(function(key) { return key !== "repo"; }));
@@ -64,20 +66,25 @@ d3.csv("../data/top10_watched_pulls.csv", function(error, data) {
     });
 
     d.total = d.pulls[d.pulls.length - 1].x1;
-    d.closedPercent = 100.0 * d.pulls[0].x1/d.total;
+    d.closedPercent = 1.0 * MAX * d.pulls[0].x1/d.total;
 
     //normalize
     d.pulls.forEach(function(p){
+      var count, percent;
+      count = p.x1 - p.x0;
       if(p.name === 'open'){
-        p.x1 = 100;
+        p.x1 = MAX;
         p.x0 = d.closedPercent;
+        percent = MAX - d.closedPercent;
       }else{
         p.x1 = d.closedPercent;
+        percent = d.closedPercent;
       }
+      p.label = Math.round(percent * 100)/100 + "% ("  + count + ")"
     });
   });
 
-  x.domain([0, 100]);
+  x.domain([0, MAX]);
   y.domain(data.map(function(d) { return d.repo; }));
 
   var repo = svg.selectAll(".repo")
@@ -86,13 +93,22 @@ d3.csv("../data/top10_watched_pulls.csv", function(error, data) {
       .attr("class", "g")
       .attr("transform", function(d) { return "translate(0," + y(d.repo) + ")"; });
 
-  repo.selectAll(".bar")
+  var bar = repo.selectAll(".bar")
       .data(function(d) { return d.pulls; })
-    .enter().append("rect")
+      .enter()
+    bar.append("rect")
       .attr("x", function(d) { return x(d.x0); })
       .attr("width", function(d) { return x(d.x1) - x(d.x0) })
       .attr("height", y.rangeBand())
-      .style("fill", function(d) { return color(d.name); });
+      .style("fill", function(d) { return color(d.name); })
+      .on("mouseover", showTooltip)
+      .on("mouseout", hideTooltip)
+    bar.append("text")
+      .attr("x", function(d) { return x(d.x1) })
+      .attr("y", function(d) { return y.rangeBand()/2 })
+      .attr("class", 'tooltip')
+      .style("display", 'none')
+      .text(function(d) { return d.label; });
 
   svg.append("g")
       .attr("class", "x axis")
@@ -102,6 +118,16 @@ d3.csv("../data/top10_watched_pulls.csv", function(error, data) {
       .attr("class", "y axis")
       .call(yAxis);
 
+  function showTooltip(g, i){
+    var labelText = this.nextSibling.nextSibling;
+    labelText.style.display = "block"
+    var xPosition = g.x1 === MAX ? x(g.x0) : x(g.x1) - labelText.clientWidth;
+    labelText.setAttribute('x', xPosition)
+  };
+
+  function hideTooltip(g, i){
+    this.nextSibling.nextSibling.style.display = "none"
+  };
 });
 
 </script>
