@@ -62,10 +62,22 @@ d3.csv("../data/top10_watched_pulls.csv", function(error, data) {
         x1: x0 += +d[name]
       };
     });
+
     d.total = d.pulls[d.pulls.length - 1].x1;
+    d.closedPercent = 100.0 * d.pulls[0].x1/d.total;
+
+    //normalize
+    d.pulls.forEach(function(p){
+      if(p.name === 'open'){
+        p.x1 = 100;
+        p.x0 = d.closedPercent;
+      }else{
+        p.x1 = d.closedPercent;
+      }
+    });
   });
 
-  x.domain([0, d3.max(data, function(d) { return d.total })]);
+  x.domain([0, 100]);
   y.domain(data.map(function(d) { return d.repo; }));
 
   var repo = svg.selectAll(".repo")
