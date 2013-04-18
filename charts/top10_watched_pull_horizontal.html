@@ -17,8 +17,22 @@ body {
   fill: steelblue;
 }
 
+form {
+  width: 960px;
+}
+
+form label{
+  float: right;
+}
+
 </style>
 <body>
+<form action>
+  <label><input type="radio" name="mode" value="denormalize"> Denormalized</label>
+  <label><input type="radio" name="mode" value="normalize" checked> Normalized</label>
+</form>
+<h1>GitHub Closed/Open Pull Requests</h1>
+<h2>Top 10 Watched Repositories</h2>
 <script src="../lib/d3.v3.min.js"></script>
 <script>
 
@@ -74,14 +88,13 @@ d3.csv("../data/top10_watched_pulls.csv", function(error, data) {
       var count, percent;
       count = p.x1 - p.x0;
       if(p.name === 'open'){
-        p.x1 = MAX;
-        p.x0 = d.closedPercent;
-        percent = MAX - d.closedPercent;
+        p.nx0 = d.closedPercent;
+        p.nx1 = MAX;
       }else{
-        p.x1 = d.closedPercent;
-        percent = d.closedPercent;
+        p.nx0 = 0;
+        p.nx1 = d.closedPercent;
       }
-      p.label = Math.round(percent * 100)/100 + "% ("  + count + ")"
+      p.label = Math.round((p.nx1 - p.nx0) * 100)/100 + "% ("  + count + ")"
     });
   });
 
@@ -98,14 +111,14 @@ d3.csv("../data/top10_watched_pulls.csv", function(error, data) {
       .data(function(d) { return d.pulls; })
       .enter()
     bar.append("rect")
-      .attr("x", function(d) { return x(d.x0); })
-      .attr("width", function(d) { return x(d.x1) - x(d.x0) })
+      .attr("x", function(d) { return x(d.nx0); })
+      .attr("width", function(d) { return x(d.nx1) - x(d.nx0) })
       .attr("height", y.rangeBand())
       .style("fill", function(d) { return color(d.name); })
       .on("mouseover", showTooltip)
       .on("mouseout", hideTooltip)
     bar.append("text")
-      .attr("x", function(d) { return x(d.x1) })
+      .attr("x", function(d) { return x(d.nx1) })
       .attr("y", function(d) { return y.rangeBand()/2 })
       .attr("class", 'tooltip')
       .style("display", 'none')
@@ -119,16 +132,63 @@ d3.csv("../data/top10_watched_pulls.csv", function(error, data) {
       .attr("class", "y axis")
       .call(yAxis);
 
+  d3.selectAll("input").on("change", change);
+
+  //transitions
   function showTooltip(g, i){
+    var xPosition;
     var labelText = this.nextSibling.nextSibling;
     labelText.style.display = "block"
-    var xPosition = g.x1 === MAX ? x(g.x0) : x(g.x1) - labelText.clientWidth;
+
+    normalized = document.querySelector('input[name=mode]:checked').value == 'normalize'
+    if(normalized)
+      xPosition = g.nx0 === 0 ? x(g.nx1) - labelText.clientWidth : x(g.nx0);
+    else
+      xPosition = g.x0 === 0 ? x(g.x1) - labelText.clientWidth : x(g.x0);
     labelText.setAttribute('x', xPosition)
   };
 
   function hideTooltip(g, i){
     this.nextSibling.nextSibling.style.display = "none"
   };
+
+  function change() {
+    if (this.value === "normalize") normalize();
+    else denormalize();
+  }
+
+  function normalize() {
+    x.domain([0, MAX]);
+    xAxis.tickFormat(function(x){return x + "%" });
+
+    var rect = repo.selectAll("rect")
+
+    rect.transition()
+        .duration(500)
+        .delay(function(d, i) { return i * 10; })
+        .attr("x", function(d) { return x(d.nx0); })
+        .attr("width", function(d) { return x(d.nx1) - x(d.nx0) })
+    svg.select(".x.axis").transition().call(xAxis);
+
+    var text = repo.selectAll("text.tooltip");
+    text.attr("x", function(d) { return x(d.nx1) })
+  }
+
+  function denormalize() {
+    x.domain([0, d3.max(data, function(d) { return d.total })]);
+    xAxis.tickFormat(function(x){return x });
+
+    var rect = repo.selectAll("rect")
+    rect.transition()
+        .duration(500)
+        .delay(function(d, i) { return i * 10; })
+        .attr("x", function(d) { return x(d.x0); })
+        .attr("width", function(d) { return x(d.x1) - x(d.x0) })
+    svg.select(".x.axis").transition().call(xAxis);
+
+    var text = repo.selectAll("text.tooltip");
+    text.attr("x", function(d) { return x(d.x1) })
+  }
 });
 
 </script>
