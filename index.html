@@ -1,66 +1,194 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>Github-data-challenge by weilu</title>
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Top 10 Watched Repositories</title>
+<style>
+body {
+  font: 10px sans-serif;
+}
 
-    <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-  </head>
-  <body>
-    <div class="wrapper">
-      <header>
-        <h1>Github-data-challenge</h1>
-        <p></p>
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
 
-        <p class="view"><a href="https://github.com/weilu/github-data-challenge">View the Project on GitHub <small>weilu/github-data-challenge</small></a></p>
+.bar {
+  fill: steelblue;
+}
 
+form {
+  width: 960px;
+}
 
-        <ul>
-          <li><a href="https://github.com/weilu/github-data-challenge/zipball/master">Download <strong>ZIP File</strong></a></li>
-          <li><a href="https://github.com/weilu/github-data-challenge/tarball/master">Download <strong>TAR Ball</strong></a></li>
-          <li><a href="https://github.com/weilu/github-data-challenge">View On <strong>GitHub</strong></a></li>
-        </ul>
-      </header>
-      <section>
-        <h3>Welcome to GitHub Pages.</h3>
+form label{
+  float: right;
+}
 
-<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here using GitHub Flavored Markdown, select a template crafted by a designer, and publish. After your page is generated, you can check out the new branch:</p>
+</style>
+<body>
+<form action>
+  <label><input type="radio" name="mode" value="denormalize"> Denormalized</label>
+  <label><input type="radio" name="mode" value="normalize" checked> Normalized</label>
+</form>
+<h1>GitHub Closed/Open Pull Requests</h1>
+<h2>Top 10 Watched Repositories</h2>
+<script src="../lib/d3.v3.min.js"></script>
+<script>
 
-<pre><code>$ cd your_repo_root/repo_name
-$ git fetch origin
-$ git checkout gh-pages
-</code></pre>
+var margin = {top: 30, right: 50, bottom: 10, left: 150},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
 
-<p>If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.</p>
+var x = d3.scale.linear()
+    .range([0, width])
 
-<h3>Designer Templates</h3>
+var y = d3.scale.ordinal()
+    .rangeRoundBands([0, height], .1);
 
-<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("top")
+    .tickFormat(function(x){return x + "%" });
 
-<h3>Rather Drive Stick?</h3>
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left")
 
-<p>If you prefer to not use the automatic generator, push a branch named <code>gh-pages</code> to your repository to create a page manually. In addition to supporting regular HTML content, GitHub Pages support Jekyll, a simple, blog aware static site generator written by our own Tom Preston-Werner. Jekyll makes it easy to create site-wide headers and footers without having to copy them across every page. It also offers intelligent blog support and other advanced templating features.</p>
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-<h3>Authors and Contributors</h3>
+var color = d3.scale.ordinal()
+    .range(["#98abc5", "#8a89a6"]);
 
-<p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
+var MAX = 100;
 
-<h3>Support or Contact</h3>
+d3.csv("./data/top10_watched_pulls.csv", function(error, data) {
 
-<p>Having trouble with Pages? Check out the documentation at <a href="http://help.github.com/pages">http://help.github.com/pages</a> or contact <a href="mailto:support@github.com">support@github.com</a> and we’ll help you sort it out.</p>
-      </section>
-      <footer>
-        <p>This project is maintained by <a href="https://github.com/weilu">weilu</a></p>
-        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
-      </footer>
-    </div>
-    <script src="javascripts/scale.fix.js"></script>
-    
-  </body>
-</html>
+  color.domain(d3.keys(data[0]).filter(function(key) { return key !== "repo"; }));
+
+  data.forEach(function(d) {
+    var x0 = 0;
+    d.pulls = color.domain().map(function(name) {
+      return {
+        name: name,
+        x0: x0,
+        x1: x0 += +d[name]
+      };
+    });
+
+    d.total = d.pulls[d.pulls.length - 1].x1;
+    d.closedPercent = 1.0 * MAX * d.pulls[0].x1/d.total;
+
+    //normalize
+    d.pulls.forEach(function(p){
+      var count, percent;
+      count = p.x1 - p.x0;
+      if(p.name === 'open'){
+        p.nx0 = d.closedPercent;
+        p.nx1 = MAX;
+      }else{
+        p.nx0 = 0;
+        p.nx1 = d.closedPercent;
+      }
+      p.label = Math.round((p.nx1 - p.nx0) * 100)/100 + "% ("  + count + ")"
+    });
+  });
+
+  x.domain([0, MAX]);
+  y.domain(data.map(function(d) { return d.repo; }));
+
+  var repo = svg.selectAll(".repo")
+      .data(data)
+    .enter().append("g")
+      .attr("class", "g")
+      .attr("transform", function(d) { return "translate(0," + y(d.repo) + ")"; });
+
+  var bar = repo.selectAll(".bar")
+      .data(function(d) { return d.pulls; })
+      .enter()
+    bar.append("rect")
+      .attr("x", function(d) { return x(d.nx0); })
+      .attr("width", function(d) { return x(d.nx1) - x(d.nx0) })
+      .attr("height", y.rangeBand())
+      .style("fill", function(d) { return color(d.name); })
+      .on("mouseover", showTooltip)
+      .on("mouseout", hideTooltip)
+    bar.append("text")
+      .attr("x", function(d) { return x(d.nx1) })
+      .attr("y", function(d) { return y.rangeBand()/2 })
+      .attr("class", 'tooltip')
+      .style("display", 'none')
+      .text(function(d) { return d.label; });
+
+  svg.append("g")
+      .attr("class", "x axis")
+      .call(xAxis);
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis);
+
+  d3.selectAll("input").on("change", change);
+
+  //transitions
+  function showTooltip(g, i){
+    var xPosition;
+    var labelText = this.nextSibling.nextSibling;
+    labelText.style.display = "block"
+
+    normalized = document.querySelector('input[name=mode]:checked').value == 'normalize'
+    if(normalized)
+      xPosition = g.nx0 === 0 ? x(g.nx1) - labelText.clientWidth : x(g.nx0);
+    else
+      xPosition = g.x0 === 0 ? x(g.x1) - labelText.clientWidth : x(g.x0);
+    labelText.setAttribute('x', xPosition)
+  };
+
+  function hideTooltip(g, i){
+    this.nextSibling.nextSibling.style.display = "none"
+  };
+
+  function change() {
+    if (this.value === "normalize") normalize();
+    else denormalize();
+  }
+
+  function normalize() {
+    x.domain([0, MAX]);
+    xAxis.tickFormat(function(x){return x + "%" });
+
+    var rect = repo.selectAll("rect")
+
+    rect.transition()
+        .duration(500)
+        .delay(function(d, i) { return i * 10; })
+        .attr("x", function(d) { return x(d.nx0); })
+        .attr("width", function(d) { return x(d.nx1) - x(d.nx0) })
+    svg.select(".x.axis").transition().call(xAxis);
+
+    var text = repo.selectAll("text.tooltip");
+    text.attr("x", function(d) { return x(d.nx1) })
+  }
+
+  function denormalize() {
+    x.domain([0, d3.max(data, function(d) { return d.total })]);
+    xAxis.tickFormat(function(x){return x });
+
+    var rect = repo.selectAll("rect")
+    rect.transition()
+        .duration(500)
+        .delay(function(d, i) { return i * 10; })
+        .attr("x", function(d) { return x(d.x0); })
+        .attr("width", function(d) { return x(d.x1) - x(d.x0) })
+    svg.select(".x.axis").transition().call(xAxis);
+
+    var text = repo.selectAll("text.tooltip");
+    text.attr("x", function(d) { return x(d.x1) })
+  }
+});
+
+</script>
