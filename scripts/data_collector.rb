@@ -17,11 +17,14 @@ def pull_request_ids(repo, state)
   ids.uniq
 end
 
+out_file = '../data/top10_watched_pulls.csv'
+in_file = '../data/top10_watched.csv'
+
 @client = Octokit::Client.new(:login => "weilu", :password => ENV['_GITHUB'])
 
-CSV.open('data/top10_watched_pulls.csv', 'wb') do |csv|
+CSV.open(out_file, 'wb') do |csv|
   csv << ['repo', 'closed', 'open']
-  File.open 'top10_watched.csv' do |f|
+  File.open in_file do |f|
     f.read.split("\n").each do |url|
       repo_path = URI.parse(url).path.slice(1..-1)
       closed = pull_request_ids(repo_path, 'closed').count

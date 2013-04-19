@@ -13,8 +13,9 @@ body {
   shape-rendering: crispEdges;
 }
 
-.bar {
-  fill: steelblue;
+.legend line {
+  stroke: #000;
+  shape-rendering: crispEdges;
 }
 
 form {
@@ -33,7 +34,7 @@ form label{
 </form>
 <h1>GitHub Closed/Open Pull Requests</h1>
 <h2>Top 10 Watched Repositories</h2>
-<script src="../lib/d3.v3.min.js"></script>
+<script src="./lib/d3.v3.min.js"></script>
 <script>
 
 var margin = {top: 30, right: 50, bottom: 10, left: 150},
@@ -66,7 +67,7 @@ var color = d3.scale.ordinal()
 
 var MAX = 100;
 
-d3.csv("../data/top10_watched_pulls.csv", function(error, data) {
+d3.csv("./data/top10_watched_pulls.csv", function(error, data) {
 
   color.domain(d3.keys(data[0]).filter(function(key) { return key !== "repo"; }));
 
@@ -104,7 +105,7 @@ d3.csv("../data/top10_watched_pulls.csv", function(error, data) {
   var repo = svg.selectAll(".repo")
       .data(data)
     .enter().append("g")
-      .attr("class", "g")
+      .attr("class", "repo")
       .attr("transform", function(d) { return "translate(0," + y(d.repo) + ")"; });
 
   var bar = repo.selectAll(".bar")
@@ -124,6 +125,22 @@ d3.csv("../data/top10_watched_pulls.csv", function(error, data) {
       .style("display", 'none')
       .text(function(d) { return d.label; });
 
+  //Legend
+  var legend = svg.select(".repo:last-child").selectAll(".legend")
+      .data(function(d) { return d.pulls; })
+    .enter().append("g")
+      .attr("class", "legend")
+      .attr("transform", function(d) { return "translate(" + x(d.nx0)+ "," + y.rangeBand() + ")"; });
+
+  legend.append("line")
+      .attr("y2", 10);
+
+  legend.append("text")
+      .attr("y", 10)
+      .attr("dy", ".35em")
+      .text(function(d) { return d.name; });
+
+  //Axis
   svg.append("g")
       .attr("class", "x axis")
       .call(xAxis);
@@ -132,9 +149,10 @@ d3.csv("../data/top10_watched_pulls.csv", function(error, data) {
       .attr("class", "y axis")
       .call(yAxis);
 
+  //Form
   d3.selectAll("input").on("change", change);
 
-  //transitions
+  //Transitions
   function showTooltip(g, i){
     var xPosition;
     var labelText = this.nextSibling.nextSibling;
